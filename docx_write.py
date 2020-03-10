@@ -216,9 +216,14 @@ def generate():
             var = tk.StringVar()
             tk.Entry(window,textvariable=var,show=None).grid(row=len(para_excluded),column=1,padx=10,pady=10)
 
+        # 确定 关闭 按钮frame
+        frame = tk.Frame(window)
+        frame.grid(row=i+1, column=0, columnspan=2)
+
         #确定按键
-        btn_insert = tk.Button(window,text="确定",command=lambda:insert())
-        btn_insert.grid(row=len(para_excluded,column=3))
+        btn_insert = tk.Button(frame,text="确定",command=lambda:insert(),height=2, width=8,
+                           font=('黑体', 12, 'bold'))
+        btn_insert.grid(row=i+1,column=0)
 
         window.mainloop()
     return
