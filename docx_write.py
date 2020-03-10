@@ -9,6 +9,11 @@ import re
 #获取登记表模板路径的函数
 def get_file_template():
     path_template = tkinter.filedialog.askopenfilename(title="请选择输入登记表模板", file=[("Microsoft Word Document", ".docx")])
+    #获取登记表名称
+    tmp = path_template.split("/")
+    tmp1 = tmp[-1].split(".")
+    global name_template
+    name_template = tmp1[0]
     var.set(path_template)
     global document_1
     document_1 = MailMerge(var.get())  # MailMerge组件
@@ -127,6 +132,7 @@ def generate():
             #多值参数名称label
             tk.Label(window1,text="%s:"%para_multinames[i],font=("宋体",10),height=2).grid(row=i,column=0,padx=10,pady=10)
             var2 = tk.StringVar()
+            var2.set(0)
             temp=[]#列表元素去重
             for item in para_multivalues[i].split(","):
                 item = item.rstrip()#去除字符串尾端空格
@@ -134,19 +140,31 @@ def generate():
                     temp.append(item)
             for j in range(len(temp)):#单个配置参数单选框创建
                 value = temp[j]
-                rb = tk.Radiobutton(window1,text=value,variable=i,value=value)
+                rb = tk.Radiobutton(window1,text=value,variable=i,value=value,bg="Grey",indicatoron=0)
                 rb.grid(row=i,column=j+3,padx=10,pady=10)
                 rb.bind("<Button-1>",get_input_value)
+        #确定 关闭 按钮frame
+        frame = tk.Frame(window1)
+        frame.grid(row=len(para_multinames),column=0,columnspan=2)
+        # 确定窗口按键
+        btn_ok = tk.Button(frame, text="确定", command=lambda: close(), height=2, width=8,
+                           font=('黑体', 12, 'bold')) \
+            .grid(row=len(para_multinames), column=2, padx=20, pady=10)
 
+        # 取消按键
+        btn_cancel = tk.Button(frame, text="取消", command=lambda: close(), height=2, width=8,font=('黑体', 12, 'bold')) \
+            .grid(row=len(para_multinames), column=4, padx=20, pady=10)
+        #关闭函数
+        def close():
+            window1.quit()
+            window1.destroy()
 
-        #确定窗口按键
-        btn_ok = tk.Button(window1,text="确定",command=lambda :window1.quit()).grid(row=len(para_multinames),column=0,padx=10,pady=10)
         window1.mainloop()
 
 
     if para_excluded ==[]:
         tkinter.messagebox.showinfo(title="报表生成工具",message="登记表已生成")
-        document_1.write('D:\\99-模板安全技术条件.docx')  # 将内容写入新word文件中
+        document_1.write('D:\\%s.docx'%name_template)  # 将内容写入新word文件中
     else:
         #手动输入登记表中未包含在参数库中的参数
         def insert():
@@ -158,8 +176,10 @@ def generate():
                 dict2 = {para_excluded[i]: tmp[i]}
                 # print(dict2)
                 document_1.merge(parts=None, **dict2)
+                window.quit()
+                window.destroy()
+            document_1.write('D:\\%s.docx'% name_template)  # 将内容写入新word文件中
             tkinter.messagebox.showinfo(title="报表生成工具", message="登记表已生成")
-            document_1.write('D:\\99-模板安全技术条件.docx')  # 将内容写入新word文件中
             return
 
         #由于是新窗口不可使用tk.Tk()创建根窗口，否则无法与原来的根窗口交互！！！
@@ -198,7 +218,7 @@ def generate():
 
         #确定按键
         btn_insert = tk.Button(window,text="确定",command=lambda:insert())
-        btn_insert.grid(row=0,column=6)
+        btn_insert.grid(row=len(para_excluded,column=3))
 
         window.mainloop()
     return
