@@ -20,13 +20,37 @@ def get_file_database():
     path_database= tkinter.filedialog.askopenfilename(title="请选择参数文件",
                                                        file=[("Microsoft Excel 97-2003 Worksheet", ".xls"),
                                                              ("Microsoft Excel Worksheet", ".xlsx")])
-    var2.set(path_database)
-    global data
-    data = xlrd.open_workbook(var2.get())  # 打开参数文件
-    global table
-    table = data.sheet_by_name("整车比较信息")  # 获取参数文件的指定worksheet
-    global num_patac
-    num_patac = table.col_values(1)  # 参数的泛亚编码
+    #选择参数文件错误
+    if type(path_database) != str:#文件类型错误
+        #弹出错误窗口
+        windows_error = tk.Toplevel()
+        windows_error.title("错误")
+        #修改窗口图片（预留）
+        windows_error.geometry("500x300")
+        #窗口文字
+        l = tk.Label(windows_error,text="请选择正确的参数文件(.xls,.xlsx)",font=("宋体",12),width=30,height=2)
+        l.place(x=235,y=120,anchor="nw")
+        #窗口按钮
+        b = tk.Button(windows_error,text="确定",command=lambda :get_file_database()).place()
+    if path_database == "":#未选择文件
+        # 弹出错误窗口
+        windows_error = tk.Toplevel()
+        windows_error.title("错误")
+        # 修改窗口图片（预留）
+        windows_error.geometry("500x300")
+        # 窗口文字
+        l = tk.Label(windows_error, text="请选择正确的参数文件(.xls,.xlsx)", font=("宋体", 12), width=30, height=2)
+        l.place(x=235, y=120, anchor="nw")
+        # 窗口按钮
+        b = tk.Button(windows_error, text="确定", command=lambda: get_file_database()).place()
+    else:
+        var2.set(path_database)
+        global data
+        data = xlrd.open_workbook(var2.get())  # 打开参数文件
+        global table
+        table = data.sheet_by_name("整车比较信息")  # 获取参数文件的指定worksheet
+        global num_patac
+        num_patac = table.col_values(1)  # 参数的泛亚编码
     return var2.get()
 
 
