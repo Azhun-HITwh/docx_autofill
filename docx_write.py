@@ -325,12 +325,3 @@ b3.pack()
 
 root.mainloop()
 
-
-
-# 手动输入参数模板，已注释
-# eng_place = num_patac.index("P0065CPT")
-# eng_place1 = table.cell(eng_place,4).value
-
-# engine = num_patac.index("P0007APT")
-# engine1 = table.cell(engine, 4).value
-
