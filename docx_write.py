@@ -1,3 +1,4 @@
+import os
 import xlrd
 from mailmerge import MailMerge
 import tkinter as tk
@@ -68,6 +69,9 @@ def generate():
     para_multivalues= [] # 多值参数的值
     para_multicodes=[]  #多指参数的field
 
+    #获取整车公告型号-添加至生成登记表的名称中
+    temp_name = Para("P0017AES")
+    typename_vehicle = temp_name.get_value()
 
     # 遍历所有登记表模板中的field
     for i in para:
@@ -164,7 +168,7 @@ def generate():
 
     if para_excluded ==[]:
         tkinter.messagebox.showinfo(title="报表生成工具",message="登记表已生成")
-        document_1.write('D:\\%s.docx'%name_template)  # 将内容写入新word文件中
+        document_1.write('D:\\sgmuserprofile\%s\Desktop\%s-%s.docx'% (user,name_template, typename_vehicle))  # 将内容写入新word文件中
     else:
         #手动输入登记表中未包含在参数库中的参数
         def insert():
@@ -178,7 +182,7 @@ def generate():
                 document_1.merge(parts=None, **dict2)
                 window.quit()
                 window.destroy()
-            document_1.write('D:\\%s.docx'% name_template)  # 将内容写入新word文件中
+            document_1.write('D:\\sgmuserprofile\%s\Desktop\%s-%s.docx'% (user,name_template, typename_vehicle))  # 将内容写入新word文件中
             tkinter.messagebox.showinfo(title="报表生成工具", message="登记表已生成")
             return
 
@@ -284,6 +288,9 @@ root = tk.Tk()  # 创建一个Tkinter.Tk()实例
 root.title("报表生成工具")#主窗口命名
 root.geometry('500x300')#主窗口大小
 
+#获取当前系统用户名
+user = os.getlogin()
+
 #提示label
 l = tk.Label(root,text="请选择登记表模板",font=("宋体",12),width=30,height=2)
 l.pack()
@@ -317,28 +324,6 @@ b3 = tk.Button(root,text="生成",font=("宋体",12),width=30,height=1,
 b3.pack()
 
 root.mainloop()
-
-# if path_template == "":
-#     master = Tk()
-#     master.title("错误")
-#     w = Label(master, text="请选择正确格式的登记表模板(.docx)", fg="red", height=6, width=50)
-#     w.pack()
-#     b = Button(master, text="Re-choose", command=lambda: get_file_template())  # command不允许带参，需要使用匿名函数传参，否则会自动执行command
-#     b.pack()
-#     b2 = Button(master, text="Quit", command=master.quit)
-#     b2.pack()
-
-
-# path_database = var2
-
-# if get_file_database() == "":
-#     master = Tk()
-#     master.title("错误")
-#     # get_file_database()
-#     w = Label(master, text="请选择正确格式的参数文件(.xls,.xlsx)", fg="red", height=6, width=50)
-#     w.pack()
-#     b = Button(master, text="OK", command=lambda: get_file_database())  # command不允许带参，需要使用匿名函数传参，否则会自动执行command
-#     b.pack()
 
 
 
