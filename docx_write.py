@@ -9,6 +9,7 @@ import re
 
 #获取登记表模板路径的函数
 def get_file_template():
+
     path_template = tkinter.filedialog.askopenfilename(title="请选择输入登记表模板", file=[("Microsoft Word Document", ".docx")])
     #获取登记表名称
     tmp = path_template.split("/")
@@ -18,11 +19,11 @@ def get_file_template():
     var.set(path_template)
     global document_1
     document_1 = MailMerge(var.get())  # MailMerge组件
-    # print(var.get())
     return var.get()
 
 #获取参数文件路径的函数
 def get_file_database():
+
     path_database= tkinter.filedialog.askopenfilename(title="请选择参数文件",
                                                        file=[("Microsoft Excel 97-2003 Worksheet", ".xls"),
                                                              ("Microsoft Excel Worksheet", ".xlsx")])
@@ -32,7 +33,7 @@ def get_file_database():
         windows_error = tk.Toplevel()
         windows_error.title("错误")
         #修改窗口图片（预留）
-        windows_error.geometry("500x300")
+        # windows_error.geometry("500x300")
         #窗口文字
         l = tk.Label(windows_error,text="请选择正确的参数文件(.xls,.xlsx)",font=("宋体",12),width=30,height=2)
         l.place(x=235,y=120,anchor="nw")
@@ -43,7 +44,7 @@ def get_file_database():
         windows_error = tk.Toplevel()
         windows_error.title("错误")
         # 修改窗口图片（预留）
-        windows_error.geometry("500x300")
+        # windows_error.geometry("500x300")
         # 窗口文字
         l = tk.Label(windows_error, text="请选择正确的参数文件(.xls,.xlsx)", font=("宋体", 12), width=30, height=2)
         l.place(x=235, y=120, anchor="nw")
@@ -59,11 +60,11 @@ def get_file_database():
         num_patac = table.col_values(1)  # 参数的泛亚编码
     return var2.get()
 
-
 #生成登记表的函数
 def generate():
 
     para = document_1.get_merge_fields()  # 登记表模板中的field
+    print(para)
     para_excluded = []  # 登记表模板中，参数库中未包含的参数
     para_multinames = [] # 多值参数在参数库中的名称
     para_multivalues= [] # 多值参数的值
@@ -78,7 +79,6 @@ def generate():
         if i in num_patac:#参数库中存在的field
             n1 = Para(i)
             v1 = n1.get_value()
-            v2 = formatPara(v1)
             if n1.comma_check() is not None:#参数值中存在逗号
                 #判断多值是否重复
                 tmp=[] #buffer
@@ -95,48 +95,50 @@ def generate():
                     para_multivalues.append(n1.get_value())
                     para_multicodes.append(i)
                     continue
-            # elif n1.slash_check() is not None:#参数值中存在/
-            #     # 抓取多值参数
-            #     para_multinames.append(n1.get_name())
-            #     para_multivalues.append(n1.get_value())
-            #     para_multicodes.append(n1.code)
-                # 去掉斜杠
-                # v3 = v2.my_split()
-                # continue
             else:
-                v3 = v1
-            dict1 = {i: v3}
-            document_1.merge(parts=None, **dict1)
+                dict1 = {i: v1}
+                document_1.merge(parts=None, **dict1)
         else:
             # 抓取登记表中未包含在参数文件中的字段
             para_excluded.append(i)
+    if '"' in para_excluded:
+        para_excluded.remove('"')
 
-
-    if para_multinames !=[]:#选择单个配置参数
-
+    # 选择单个配置参数
+    if para_multinames !=[]:
         #手动选择单配置参数值窗口
         window1 = tk.Toplevel()
         window1.title("请手动选择相应配置参数")
-        tmp = [] #获取radiobutton的text
+        tmp1 = [] #获取radiobutton的text
+
         def get_input_value(event):
             item = event.widget['text']
-            if not item in tmp: #去重
-                tmp.append(event.widget['text'])
+            if not item in tmp1: #去重
+                tmp1.append(event.widget['text'])
             # <class '_tkinter.Tcl_Obj'>
             print(event.widget['variable'])
             buffer = event.widget['variable']
             idx=int(buffer)
-            # print(para_multicodes)
-
             dict3 = {para_multicodes[idx]:event.widget['text']}
             document_1.merge(parts=None,**dict3)
             return
+
+        #检查是否多值均被选择
+        def check_status():
+            if len(tmp1) == len(para_multicodes):
+                window1.quit()
+                window1.destroy()
+            else:
+                tkinter.messagebox.showinfo(title="Error!",message="请为全部多值参数选择相应配置!")
+        #关闭函数
+        def close():
+            window1.quit()
+            window1.destroy()
 
         for i in range(len(para_multinames)):#单列显示
             #多值参数名称label
             tk.Label(window1,text="%s:"%para_multinames[i],font=("宋体",10),height=2).grid(row=i,column=0,padx=10,pady=10)
             var2 = tk.StringVar()
-            var2.set(0)
             temp=[]#列表元素去重
             for item in para_multivalues[i].split(","):
                 item = item.rstrip()#去除字符串尾端空格
@@ -147,29 +149,29 @@ def generate():
                 rb = tk.Radiobutton(window1,text=value,variable=i,value=value,bg="Grey",indicatoron=0)
                 rb.grid(row=i,column=j+3,padx=10,pady=10)
                 rb.bind("<Button-1>",get_input_value)
+
         #确定 关闭 按钮frame
         frame = tk.Frame(window1)
         frame.grid(row=len(para_multinames),column=0,columnspan=2)
         # 确定窗口按键
-        btn_ok = tk.Button(frame, text="确定", command=lambda: close(), height=2, width=8,
+        btn_ok = tk.Button(frame, text="确定", command=lambda: check_status(), height=2, width=8,
                            font=('黑体', 12, 'bold')) \
             .grid(row=len(para_multinames), column=2, padx=20, pady=10)
 
         # 取消按键
         btn_cancel = tk.Button(frame, text="取消", command=lambda: close(), height=2, width=8,font=('黑体', 12, 'bold')) \
             .grid(row=len(para_multinames), column=4, padx=20, pady=10)
-        #关闭函数
-        def close():
-            window1.quit()
-            window1.destroy()
 
         window1.mainloop()
-
 
     if para_excluded ==[]:
         tkinter.messagebox.showinfo(title="报表生成工具",message="登记表已生成")
         document_1.write('D:\\sgmuserprofile\%s\Desktop\%s-%s.docx'% (user,name_template, typename_vehicle))  # 将内容写入新word文件中
     else:
+        #由于是新窗口不可使用tk.Tk()创建根窗口，否则无法与原来的根窗口交互！！！
+        window = tk.Toplevel()
+        window.title("手动修改未填写参数")
+
         #手动输入登记表中未包含在参数库中的参数
         def insert():
             tmp = []
@@ -178,18 +180,12 @@ def generate():
                 tmp.append(var1.get())
             for i in range(len(para_excluded)):
                 dict2 = {para_excluded[i]: tmp[i]}
-                # print(dict2)
                 document_1.merge(parts=None, **dict2)
                 window.quit()
                 window.destroy()
             document_1.write('D:\\sgmuserprofile\%s\Desktop\%s-%s.docx'% (user,name_template, typename_vehicle))  # 将内容写入新word文件中
             tkinter.messagebox.showinfo(title="报表生成工具", message="登记表已生成")
             return
-
-        #由于是新窗口不可使用tk.Tk()创建根窗口，否则无法与原来的根窗口交互！！！
-        window = tk.Toplevel()
-        window.title("手动修改未填写参数")
-        # window.geometry("500x300")
 
         # 判别是否为偶数项
         if len(para_excluded)% 2 == 0:
@@ -202,6 +198,7 @@ def generate():
                 var1 = tk.StringVar()
                 tk.Entry(window,textvariable=var,show=None).grid(row=i,column=1,padx=10,pady=10)
                 tk.Entry(window,textvariable=var1,show=None).grid(row=i, column=3, padx=10, pady=10)
+
         else:
             #奇数项
             for i in range(0,len(para_excluded)-1,2):
@@ -215,14 +212,14 @@ def generate():
                 var1 = tk.StringVar()
                 tk.Entry(window, textvariable=var, show=None).grid(row=i, column=1, padx=10, pady=10)
                 tk.Entry(window, textvariable=var1, show=None).grid(row=i, column=3, padx=10, pady=10)
-            tk.Label(window, text="%s:" % para_excluded[:-1], font=("宋体", 10), height=2).grid(row=len(para_excluded), column=0,
+            tk.Label(window, text="%s:" % para_excluded[-1], font=("宋体", 10), height=2).grid(row=len(para_excluded)//2+1, column=0,
                                                                                             padx=10, pady=10)
             var = tk.StringVar()
-            tk.Entry(window,textvariable=var,show=None).grid(row=len(para_excluded),column=1,padx=10,pady=10)
+            tk.Entry(window,textvariable=var,show=None).grid(row=len(para_excluded)//2+1,column=1,padx=10,pady=10)
 
         # 确定 关闭 按钮frame
         frame = tk.Frame(window)
-        frame.grid(row=i+1, column=0, columnspan=2)
+        frame.grid(row=len(para_excluded)+1, column=0, columnspan=2)
 
         #确定按键
         btn_insert = tk.Button(frame,text="确定",command=lambda:insert(),height=2, width=8,
@@ -262,24 +259,6 @@ class Para():
         # 检查是否含有斜杠
         slash_check = re.search(r"/", Para.get_value(self), re.M | re.I)
         return slash_check
-
-# 对多值或组合参数format类
-class formatPara():
-    def __init__(self, value):
-        self.value = value
-
-    def my_trim(self):  # 删除逗号后的内容只保留单个配置
-        for i in range(len(self.value)):
-            if self.value[i] == "," or self.value[i] == "，":
-                self.value = self.value[:i]
-                break
-            else:
-                continue
-        return self.value
-
-    def my_split(self):  # 分割/后的内容只保留单个配置
-        tmp = self.value.split("/")
-        return tmp
 
 #自动获取工具GUI
 root = tk.Tk()  # 创建一个Tkinter.Tk()实例
