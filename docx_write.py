@@ -6,7 +6,6 @@ import tkinter.filedialog
 import tkinter.messagebox
 import re
 
-
 #获取登记表模板路径的函数
 def get_file_template():
 
@@ -59,6 +58,10 @@ def get_file_database():
         global num_patac
         num_patac = table.col_values(1)  # 参数的泛亚编码
     return var2.get()
+
+#定义全局变量 获取手动输入值
+global var3
+global var4
 
 #生成登记表的函数
 def generate():
@@ -118,18 +121,20 @@ def generate():
             # <class '_tkinter.Tcl_Obj'>
             print(event.widget['variable'])
             buffer = event.widget['variable']
-            idx=int(buffer)
+            idx = int(buffer)
             dict3 = {para_multicodes[idx]:event.widget['text']}
             document_1.merge(parts=None,**dict3)
             return
 
         #检查是否多值均被选择
         def check_status():
-            if len(tmp1) == len(para_multicodes):
-                window1.quit()
-                window1.destroy()
-            else:
-                tkinter.messagebox.showinfo(title="Error!",message="请为全部多值参数选择相应配置!")
+            for i in range(len(para_multicodes)):
+                if para_multicodes[i] ==[]:
+                    tkinter.messagebox.showinfo(title="Error!",message="请为全部多值参数选择相应配置!")
+
+                else:
+                    window1.quit()
+                    window1.destroy()
         #关闭函数
         def close():
             window1.quit()
@@ -138,7 +143,6 @@ def generate():
         for i in range(len(para_multinames)):#单列显示
             #多值参数名称label
             tk.Label(window1,text="%s:"%para_multinames[i],font=("宋体",10),height=2).grid(row=i,column=0,padx=10,pady=10)
-            var2 = tk.StringVar()
             temp=[]#列表元素去重
             for item in para_multivalues[i].split(","):
                 item = item.rstrip()#去除字符串尾端空格
@@ -171,18 +175,22 @@ def generate():
         #由于是新窗口不可使用tk.Tk()创建根窗口，否则无法与原来的根窗口交互！！！
         window = tk.Toplevel()
         window.title("手动修改未填写参数")
-
         #手动输入登记表中未包含在参数库中的参数
         def insert():
             tmp = []
-            for i in range(0, len(para_excluded), 2):
-                tmp.append(var.get())
-                tmp.append(var1.get())
-            for i in range(len(para_excluded)):
-                dict2 = {para_excluded[i]: tmp[i]}
+            if len(para_excluded) != 1:
+                for i in range(0, len(para_excluded), 2):
+                    tmp.append(var3.get())
+                    tmp.append(var4.get())
+                for i in range(len(para_excluded)):
+                    dict2 = {para_excluded[i]: tmp[i]}
+                    document_1.merge(parts=None, **dict2)
+            else:
+                tmp.append(var3.get())
+                dict2 = {para_excluded[0]:tmp[0]}
                 document_1.merge(parts=None, **dict2)
-                window.quit()
-                window.destroy()
+            window.quit()
+            window.destroy()
             document_1.write('D:\\sgmuserprofile\%s\Desktop\%s-%s.docx'% (user,name_template, typename_vehicle))  # 将内容写入新word文件中
             tkinter.messagebox.showinfo(title="报表生成工具", message="登记表已生成")
             return
@@ -194,28 +202,35 @@ def generate():
                 tk.Label(window, text="%s:" % para_excluded[i+1], font=("宋体", 10), height=2).grid(row=i, column=2, padx=10,
                                                                                                  pady=10)
 
-                var = tk.StringVar()  # 将label标签的内容设置为字符类型，用var来接收Entry函数的传出内容用以显示在标签上
-                var1 = tk.StringVar()
-                tk.Entry(window,textvariable=var,show=None).grid(row=i,column=1,padx=10,pady=10)
-                tk.Entry(window,textvariable=var1,show=None).grid(row=i, column=3, padx=10, pady=10)
+                var3 = tk.StringVar()  # 将label标签的内容设置为字符类型，用var来接收Entry函数的传出内容用以显示在标签上
+                var4 = tk.StringVar()
+                tk.Entry(window,textvariable=var3,show=None).grid(row=i,column=1,padx=10,pady=10)
+                tk.Entry(window,textvariable=var4,show=None).grid(row=i, column=3, padx=10, pady=10)
 
         else:
-            #奇数项
-            for i in range(0,len(para_excluded)-1,2):
-                tk.Label(window, text="%s:" % para_excluded[i], font=("宋体", 10), height=2).grid(row=i, column=0,
+            if len(para_excluded) == 1:
+            #手动填写一个参数
+                tk.Label(window,text="%s:" % para_excluded[0],font=("宋体", 10), height=2).grid(row=0, column=0,
                                                                                                 padx=10, pady=10)
-                tk.Label(window, text="%s:" % para_excluded[i + 1], font=("宋体", 10), height=2).grid(row=i, column=2,
+                var3 = tk.StringVar()
+                tk.Entry(window, textvariable=var3, show=None).grid(row=0, column=1, padx=10,pady=10)
+            else:
+            #奇数项且个数不为1
+                for i in range(0,len(para_excluded)-1,2):
+                    tk.Label(window, text="%s:" % para_excluded[i], font=("宋体", 10), height=2).grid(row=i, column=0,
+                                                                                                padx=10, pady=10)
+                    tk.Label(window, text="%s:" % para_excluded[i + 1], font=("宋体", 10), height=2).grid(row=i, column=2,
                                                                                                     padx=10,
                                                                                                     pady=10)
 
-                var = tk.StringVar()  # 将label标签的内容设置为字符类型，用var来接收Entry函数的传出内容用以显示在标签上
-                var1 = tk.StringVar()
-                tk.Entry(window, textvariable=var, show=None).grid(row=i, column=1, padx=10, pady=10)
-                tk.Entry(window, textvariable=var1, show=None).grid(row=i, column=3, padx=10, pady=10)
-            tk.Label(window, text="%s:" % para_excluded[-1], font=("宋体", 10), height=2).grid(row=len(para_excluded)//2+1, column=0,
+                    var3 = tk.StringVar()  # 将label标签的内容设置为字符类型，用var来接收Entry函数的传出内容用以显示在标签上
+                    var4 = tk.StringVar()
+                    tk.Entry(window, textvariable=var3, show=None).grid(row=i, column=1, padx=10, pady=10)
+                    tk.Entry(window, textvariable=var4, show=None).grid(row=i, column=3, padx=10, pady=10)
+                tk.Label(window, text="%s:" % para_excluded[-1], font=("宋体", 10), height=2).grid(row=len(para_excluded)//2+1, column=0,
                                                                                             padx=10, pady=10)
-            var = tk.StringVar()
-            tk.Entry(window,textvariable=var,show=None).grid(row=len(para_excluded)//2+1,column=1,padx=10,pady=10)
+                var3 = tk.StringVar()
+                tk.Entry(window,textvariable=var3,show=None).grid(row=len(para_excluded)//2+1,column=1,padx=10,pady=10)
 
         # 确定 关闭 按钮frame
         frame = tk.Frame(window)
@@ -224,7 +239,7 @@ def generate():
         #确定按键
         btn_insert = tk.Button(frame,text="确定",command=lambda:insert(),height=2, width=8,
                            font=('黑体', 12, 'bold'))
-        btn_insert.grid(row=i+1,column=0)
+        btn_insert.grid(row=len(para_excluded)+1+1,column=0)
 
         window.mainloop()
     return
