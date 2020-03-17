@@ -62,20 +62,23 @@ def get_file_database():
 #定义全局变量 获取手动输入值
 global var3
 global var4
+global dict3
 
 #生成登记表的函数
 def generate():
 
-    para = document_1.get_merge_fields()  # 登记表模板中的field
-    print(para)
+    para_unsort = document_1.get_merge_fields()  # 登记表模板中的field
+    para = list(para_unsort)
+    para.sort()
     para_excluded = []  # 登记表模板中，参数库中未包含的参数
     para_multinames = [] # 多值参数在参数库中的名称
-    para_multivalues= [] # 多值参数的值
-    para_multicodes=[]  #多指参数的field
+    para_multivalues = [] # 多值参数的值
+    para_multicodes =[]  # 多指参数的field
+    para_need_multivalues = ["P0018AVA","P0047ABE","P0290APT","P0165ACH","P0114ACH","P0296ACH","P0295ACH","P0150APT","P0011DPT"] # 需要忽略逗号分割多值的参数
 
     #获取整车公告型号-添加至生成登记表的名称中
     temp_name = Para("P0017AES")
-    typename_vehicle = temp_name.get_value()
+    typename_vehicle = temp_name.get_value().rstrip()
 
     # 遍历所有登记表模板中的field
     for i in para:
@@ -104,69 +107,86 @@ def generate():
         else:
             # 抓取登记表中未包含在参数文件中的字段
             para_excluded.append(i)
-    if '"' in para_excluded:
-        para_excluded.remove('"')
 
     # 选择单个配置参数
-    if para_multinames !=[]:
-        #手动选择单配置参数值窗口
-        window1 = tk.Toplevel()
-        window1.title("请手动选择相应配置参数")
-        tmp1 = [] #获取radiobutton的text
+    if para_multicodes !=[]:
+        #建立一个空list储存需要去除的参数
+        data_del = []
+        # 删除特例参数，不需要分割多值
+        for item in para_multicodes:
+            if item in para_need_multivalues:
+                data_del.append(item)
+        for item in data_del:
+            x1 = Para(item)
+            para_multicodes.remove(item)
+            para_multivalues.remove(x1.get_value())
+            para_multinames.remove(x1.get_name())
+            dict = {item: x1.get_value()}
+            document_1.merge(parts=None, **dict)
 
-        def get_input_value(event):
-            item = event.widget['text']
-            if not item in tmp1: #去重
-                tmp1.append(event.widget['text'])
-            # <class '_tkinter.Tcl_Obj'>
-            print(event.widget['variable'])
-            buffer = event.widget['variable']
-            idx = int(buffer)
-            dict3 = {para_multicodes[idx]:event.widget['text']}
-            document_1.merge(parts=None,**dict3)
-            return
 
-        #检查是否多值均被选择
-        def check_status():
-            for i in range(len(para_multicodes)):
-                if para_multicodes[i] ==[]:
+        if para_multinames != []:
+            #手动选择单配置参数值窗口
+            window1 = tk.Toplevel()
+            window1.title("请手动选择相应配置参数")
+            tmp1 = []
+            dict3 = {} #用于获取所有选值
+            # 获取radiobutton的text
+            def get_input_value(event):
+                item = event.widget['text']
+                if not item in tmp1: #去重
+                    tmp1.append(event.widget['text'])
+                # <class '_tkinter.Tcl_Obj'>
+                print(event.widget['variable'])
+                buffer = event.widget['variable']
+                idx = int(buffer)
+                a = para_multicodes[idx]
+                b = event.widget['text']
+                dict_temp = {a : b}
+                dict3.update(dict_temp)
+                return
+
+            #检查是否多值均被选择
+            def check_status():
+                if len(dict3) != len(para_multicodes):
                     tkinter.messagebox.showinfo(title="Error!",message="请为全部多值参数选择相应配置!")
 
                 else:
+                    document_1.merge(parts=None, **dict3)
                     window1.quit()
                     window1.destroy()
-        #关闭函数
-        def close():
-            window1.quit()
-            window1.destroy()
+            #关闭函数
+            def close():
+                window1.quit()
+                window1.destroy()
 
-        for i in range(len(para_multinames)):#单列显示
-            #多值参数名称label
-            tk.Label(window1,text="%s:"%para_multinames[i],font=("宋体",10),height=2).grid(row=i,column=0,padx=10,pady=10)
-            temp=[]#列表元素去重
-            for item in para_multivalues[i].split(","):
-                item = item.rstrip()#去除字符串尾端空格
-                if not item in temp:
-                    temp.append(item)
-            for j in range(len(temp)):#单个配置参数单选框创建
-                value = temp[j]
-                rb = tk.Radiobutton(window1,text=value,variable=i,value=value,bg="Grey",indicatoron=0)
-                rb.grid(row=i,column=j+3,padx=10,pady=10)
-                rb.bind("<Button-1>",get_input_value)
+            for i in range(len(para_multinames)):#单列显示
+                #多值参数名称label
+                tk.Label(window1,text="%s:"%para_multinames[i],font=("宋体",10),height=2).grid(row=i,column=0,padx=10,pady=10)
+                temp=[]#列表元素去重
+                for item in para_multivalues[i].split(","):
+                    item = item.rstrip()#去除字符串尾端空格
+                    if not item in temp:
+                        temp.append(item)
+                for j in range(len(temp)):#单个配置参数单选框创建
+                    value = temp[j]
+                    rb = tk.Radiobutton(window1,text=value,variable=i,value=value,bg="Grey",indicatoron=0)
+                    rb.grid(row=i,column=j+3,padx=10,pady=10)
+                    rb.bind("<Button-1>",get_input_value)
 
-        #确定 关闭 按钮frame
-        frame = tk.Frame(window1)
-        frame.grid(row=len(para_multinames),column=0,columnspan=2)
-        # 确定窗口按键
-        btn_ok = tk.Button(frame, text="确定", command=lambda: check_status(), height=2, width=8,
-                           font=('黑体', 12, 'bold')) \
-            .grid(row=len(para_multinames), column=2, padx=20, pady=10)
+            #确定 关闭 按钮frame
+            frame = tk.Frame(window1)
+            frame.grid(row=len(para_multinames),column=0,columnspan=2)
+            # 确定窗口按键
+            btn_ok = tk.Button(frame, text="确定", command=lambda: check_status(), height=2, width=8,
+                               font=('黑体', 12, 'bold')) \
+                .grid(row=len(para_multinames), column=2, padx=20, pady=10)
 
-        # 取消按键
-        btn_cancel = tk.Button(frame, text="取消", command=lambda: close(), height=2, width=8,font=('黑体', 12, 'bold')) \
-            .grid(row=len(para_multinames), column=4, padx=20, pady=10)
+            # 取消按键
+            btn_cancel = tk.Button(frame, text="取消", command=lambda: close(), height=2, width=8,font=('黑体', 12, 'bold')) \
+                .grid(row=len(para_multinames), column=4, padx=20, pady=10)
 
-        window1.mainloop()
+            window1.mainloop()
 
     if para_excluded ==[]:
         tkinter.messagebox.showinfo(title="报表生成工具",message="登记表已生成")
@@ -194,6 +214,11 @@ def generate():
             document_1.write('D:\\sgmuserprofile\%s\Desktop\%s-%s.docx'% (user,name_template, typename_vehicle))  # 将内容写入新word文件中
             tkinter.messagebox.showinfo(title="报表生成工具", message="登记表已生成")
             return
+
+        # 关闭函数
+        def close():
+            window.quit()
+            window.destroy()
 
         # 判别是否为偶数项
         if len(para_excluded)% 2 == 0:
@@ -240,6 +265,11 @@ def generate():
         btn_insert = tk.Button(frame,text="确定",command=lambda:insert(),height=2, width=8,
                            font=('黑体', 12, 'bold'))
         btn_insert.grid(row=len(para_excluded)+1+1,column=0)
+
+        #取消按键
+        btn_cancel = tk.Button(frame, text="取消", command=lambda: close(), height=2, width=8,
+                               font=('黑体', 12, 'bold'))
+        btn_cancel.grid(row=len(para_excluded) + 1 + 1, column=3)
 
         window.mainloop()
     return
@@ -295,7 +325,7 @@ b1.pack()
 
 #显示选择文件路径
 var = tk.StringVar() # 将label标签的内容设置为字符类型，用var来接收get_file_template()函数的传出内容用以显示在标签上
-l1 = tk.Label(root,textvariable=var,font=("宋体",8),height=2)
+l1 = tk.Label(root,textvariable=var,font=("宋体",8),height=2,wraplength=350)
 l1.pack()
 
 #提示label2
@@ -308,7 +338,7 @@ b2.pack()
 
 #显示选择文件路径
 var2 = tk.StringVar() # 将label标签的内容设置为字符类型，用var来接收get_database_template()函数的传出内容用以显示在标签上
-l3 = tk.Label(root,textvariable=var2,font=("宋体",8),height=2)
+l3 = tk.Label(root,textvariable=var2,font=("宋体",8),height=2,wraplength=350)
 l3.pack()
 
 
