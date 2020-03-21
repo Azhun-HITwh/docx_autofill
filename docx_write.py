@@ -116,6 +116,7 @@ def generate(path=None):
     para_multicodes =[]  # 多指参数的field
     para_need_multivalues = ["P0018AVA","P0047ABE","P0290APT",
                              "P0165ACH","P0114ACH","P0296ACH","P0295ACH","P0150APT","P0011DPT"] # 需要忽略逗号分割多值的参数
+    para_special = ["P0028AVP-A","P0028AVP-B","P0028AVP-C","P0028BVP-A","P0028BVP-B","P0028BVP-C"] # 滑行曲线
 
     #获取整车公告型号-添加至生成登记表的名称中
     temp_name = Para("P0017AES")
@@ -146,8 +147,9 @@ def generate(path=None):
                 dict1 = {i: v1}
                 document_1.merge(parts=None, **dict1)
         else:
+
             # 抓取登记表中未包含在参数文件中的字段
-            para_excluded.append(i)
+                para_excluded.append(i)
 
     # 选择单个配置参数
     if para_multicodes !=[]:
@@ -195,7 +197,7 @@ def generate(path=None):
                 else:
                     document_1.merge(parts=None, **dict3)
                     #确认后清空字典
-                    dict3.clear()
+
                     window1.quit()
                     window1.destroy()
             #关闭函数
@@ -247,7 +249,23 @@ def generate(path=None):
         global entry_tmp
         entry_tmp = []
         dict4 = {}
-        #key写入dict4
+
+        # 滑行曲线分割
+        if para_special[0] in para_excluded:
+            Slip_curve_Emission5 = Para("P0028AVP")
+            Slip_curve_Emission6 = Para("P0028BVP")
+            for i in range(3):
+                dict4[para_special[i]] = Slip_curve_Emission5.get_value().split(";")[i]
+                para_excluded.remove(para_special[i])
+            for i in range(3):
+                dict4[para_special[i+3]] = Slip_curve_Emission6.get_value().split(";")[i]
+                para_excluded.remove(para_special[i+3])
+        if "ratio_weight_axles" in para_excluded:
+            ratio = int(dict3["P0008AVP"])/int(dict3["P0005BVP"])
+            dict4["ratio_weight_axles"] = str(round(ratio,3))
+            para_excluded.remove("ratio_weight_axles")
+
+        # key写入dict4
         for item in para_excluded:
             dict4[item] = ""
 
