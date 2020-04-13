@@ -1,6 +1,6 @@
 import base64
 
-open_icon = open("20200327014628998_easyicon_net_128.ico", "rb")  # 选择图标文件
+open_icon = open("aivox-1x2jr-001.ico", "rb")  # 选择图标文件
 b64str = base64.b64encode(open_icon.read())
 open_icon.close()
 write_data = "img = '{0}'".format(b64str)
