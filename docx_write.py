@@ -13,6 +13,8 @@ import tkinter as tk
 import tkinter.filedialog
 import tkinter.messagebox
 import base64
+import logging
+
 
 # 定义全局变量 获取手动输入值
 global var3, var4
@@ -82,6 +84,7 @@ def main():
     # 获取登记表模板路径的函数
     def get_file_template():
 
+        global path_template
         path_template = tkinter.filedialog.askopenfilename(title="请选择输入登记表模板",
                                                            file=[("Microsoft Word Document", ".docx")])
 
@@ -89,10 +92,12 @@ def main():
         if type(path_template) != str:  # 文件类型错误
             # 弹出错误窗口
             tkinter.messagebox.showerror('错误', '请选择正确的登记表模板!')
+            logging.error('A wrong format of template is selected.')
 
         if path_template == "":  # 未选择文件
             # 弹出错误窗口
             tkinter.messagebox.showerror('错误', '请选择正确的登记表模板!')
+            logging.error('No template is selected.')
 
         else:
             # 获取登记表名称
@@ -101,8 +106,8 @@ def main():
             global name_template
             name_template = tmp1[0]
             var.set(path_template)
-            global document_1
-            document_1 = MailMerge(var.get())  # MailMerge组件
+            # global document_1
+            # document_1 = MailMerge(var.get())  # MailMerge组件
             return var.get()
 
     # 选择文件button
@@ -130,19 +135,21 @@ def main():
         if type(path_database) != str:  # 文件类型错误
             # 弹出错误窗口
             tkinter.messagebox.showerror('错误', '请选择正确的参数文件!')
+            logging.error('A wrong format of database is selected.')
 
         if path_database == "":  # 未选择文件
             # 弹出错误窗口
             tkinter.messagebox.showerror('错误', '请选择正确的参数文件!')
+            logging.error('No database is selected.')
 
         else:
             var2.set(path_database)
-            global data
-            data = xlrd.open_workbook(var2.get())  # 打开参数文件
-            global table
-            table = data.sheet_by_name("整车比较信息")  # 获取参数文件的指定worksheet
-            global num_patac
-            num_patac = table.col_values(1)  # 参数的泛亚编码
+            # global data
+            # data = xlrd.open_workbook(var2.get())  # 打开参数文件
+            # global table
+            # table = data.sheet_by_name("整车比较信息")  # 获取参数文件的指定worksheet
+            # global num_patac
+            # num_patac = table.col_values(1)  # 参数的泛亚编码
         return var2.get()
 
     # 选择文件button2
@@ -158,7 +165,20 @@ def main():
     # 生成登记表的函数
     def generate(path=None):
 
+        global data
+        data = xlrd.open_workbook(var2.get())  # 打开参数文件
+
+        global table
+        table = data.sheet_by_name("整车比较信息")  # 获取参数文件的指定worksheet
+
+        global num_patac
+        num_patac = table.col_values(1)  # 参数的泛亚编码
+
+        global document_1
+        document_1 = MailMerge(path_template)  # MailMerge组件
+
         global dict3
+
         para_unsort = document_1.get_merge_fields()  # 登记表模板中的field
         para = list(para_unsort)
         para.sort()
@@ -219,7 +239,7 @@ def main():
                 dict_temp = {item: x1.get_value()}
                 document_1.merge(parts=None, **dict_temp)
 
-            if para_multinames:
+            if para_multicodes:
                 # 手动选择单配置参数值窗口
                 window1 = tk.Toplevel()
                 window1.title("请手动选择相应配置参数")
@@ -233,16 +253,30 @@ def main():
 
                 canvas = tk.Canvas(myframe)
                 frame = tk.Frame(canvas)
-                myscrollbar = tk.Scrollbar(myframe, orient="vertical", command=canvas.yview)
-                canvas.configure(yscrollcommand=myscrollbar.set)
 
-                myscrollbar.pack(side="right", fill="y")
+                myscrollbar_v = tk.Scrollbar(myframe, orient="vertical", command=canvas.yview)
+                myscrollbar_h = tk.Scrollbar(myframe, orient="horizontal", command=canvas.xview)
+                canvas.configure(yscrollcommand=myscrollbar_v.set)
+                canvas.configure(xscrollcommand=myscrollbar_h.set)
+                myscrollbar_v.pack(side="right", fill="y")
+                myscrollbar_h.pack(side="bottom", fill="x")
+
                 canvas.pack(side="left")
                 canvas.create_window((0, 0), window=frame, anchor='nw')
                 frame.bind("<Configure>", myfunction)
 
+                # initialize dict3 for parameters with multiple values
+                if 'dict3' not in globals().keys():
+                    dict3 = {}  # 用于获取所有选值
+                elif list(dict3.keys()) != para_multicodes:
+                    # print(para_multicodes)
+                    # print(list(dict3.keys()))
+                    dict3 = {}  # 如果更换登记表模板，所有参数均需要点击
+                    logging.warning('If the template is changed, all the parameters should be re-selected.')
+                else:
+                    pass
+
                 tmp1 = []
-                dict3 = {}  # 用于获取所有选值
 
                 # 获取radiobutton的text
                 def get_input_value(event):
@@ -253,18 +287,21 @@ def main():
                     print(event.widget['variable'])
                     buffer = event.widget['variable']
                     idx = int(buffer)
-                    a = para_multicodes[idx]
-                    b = event.widget['text']
-                    dict_temp = {a: b}
+                    # print(event.widget['value'])
+                    dict_temp = {para_multicodes[idx]: event.widget['text']}
                     dict3.update(dict_temp)
                     return
 
                 # 检查是否多值均被选择
                 def check_status():
                     if len(dict3) != len(para_multicodes):
+                        # print(dict3)
+                        # print(para_multicodes)
                         tkinter.messagebox.showerror('错误', '请为全部多值参数选择相应配置!')
+                        logging.error('Not all the parameters are distributed the setting.')
                     else:
                         document_1.merge(parts=None, **dict3)
+                        print(globals())
                         window1.quit()
                         window1.destroy()
                     return dict3
@@ -274,6 +311,7 @@ def main():
                     window1.quit()
                     window1.destroy()
                     tkinter.messagebox.showerror('错误', '程序中止!请返回主界面重新启动程序！')
+                    logging.error('Cancel is clicked.')
                     return
 
                 for i in range(len(para_multinames)):  # 单列显示
@@ -287,7 +325,7 @@ def main():
                             temp.append(item)
                     for j in range(len(temp)):  # 单个配置参数单选框创建
                         value = temp[j]
-                        rb = tk.Radiobutton(frame, text=value, variable=i, value=value, bg="Blue", fg="Red",
+                        rb = tk.Radiobutton(frame, text=value, variable=i, value=value, bg="Grey", fg="Black",
                                             indicatoron=0, font=("Century Gothic", 12, "bold"), width=15,
                                             wraplength=100)
                         rb.grid(row=i, column=j + 3, padx=10, pady=10)
@@ -310,13 +348,14 @@ def main():
                 window1.mainloop()
 
         if not para_excluded:
-            tkinter.messagebox.showinfo(title="Got it!", message="登记表已生成！")
             if path is None:
                 # 将内容写入新word文件中
                 document_1.write(
                     'D:\\sgmuserprofile\%s\Desktop\%s-%s.docx' % (user, name_template, typename_vehicle))
             else:
                 document_1.write('%s.docx' % path)
+            tkinter.messagebox.showinfo(title="Got it!", message="登记表已生成！")
+            logging.info('Done.')
             # root.quit()
             # root.destroy()
         else:
@@ -333,10 +372,14 @@ def main():
 
             canvas = tk.Canvas(myframe)
             frame = tk.Frame(canvas)
-            myscrollbar = tk.Scrollbar(myframe, orient="vertical", command=canvas.yview)
-            canvas.configure(yscrollcommand=myscrollbar.set)
 
-            myscrollbar.pack(side="right", fill="y")
+            myscrollbar_v = tk.Scrollbar(myframe, orient="vertical", command=canvas.yview)
+            myscrollbar_h = tk.Scrollbar(myframe, orient="horizontal", command=canvas.xview)
+            canvas.configure(yscrollcommand=myscrollbar_v.set)
+            canvas.configure(xscrollcommand=myscrollbar_h.set)
+            myscrollbar_v.pack(side="right", fill="y")
+            myscrollbar_h.pack(side="bottom", fill="x")
+
             canvas.pack(side="left")
             canvas.create_window((0, 0), window=frame, anchor='nw')
             frame.bind("<Configure>", myfunction)
@@ -367,13 +410,27 @@ def main():
             # key写入dict4
             for item in para_excluded:
                 dict4[item] = ""
+
             # get()获取entry内容
             def insert2(event):
                 buffer2 = event.widget["textvariable"]
                 # print(buffer2)
-                idx_1 = int(buffer2[-1]) - 2
-                dict_tmp = {para_excluded[idx_1]: var_list['var_entry%s' % idx_1].get()}
-                dict4.update(dict_tmp)
+                temp_idx = re.findall('\d+',buffer2)
+                # print(temp_idx[0])
+                idx_1 = int(temp_idx[0]) - 2
+                # print(idx_1)
+                if idx_1 < len(para_excluded):
+                    # print(para_excluded)
+                    dict_tmp = {para_excluded[idx_1]: var_list['var_entry%d' % idx_1].get()}
+                    dict4.update(dict_tmp)
+                    # print(dict4)
+                else:
+                    times = idx_1 // len(para_excluded)
+                    # print("times=", times)
+                    idx_1 = idx_1 - len(para_excluded) * times
+                    # print(para_excluded)
+                    dict_tmp = {para_excluded[idx_1]: var_list['var_entry%d' % idx_1].get()}
+                    dict4.update(dict_tmp)
 
             def check_entry_status():  # 手动输入参数值，确定按钮激活函数
                 if "VIN(请输入17位号码)" in dict4.keys():
@@ -381,11 +438,15 @@ def main():
                     if len(dict4["VIN(请输入17位号码)"]) != 17:
                         # 弹窗错误提示
                         tkinter.messagebox.showerror('错误', '请输入17位正确VIN！')
+                        logging.error('The length of VIN is not 17.')
                     elif "" in dict4.values():  # 判断是否有未填写的参数
                         # 弹窗错误提示
+                        print(dict4)
                         tkinter.messagebox.showerror('错误', '请为所有未填参数输入参数值！')
+                        logging.error('Not all the parameters are set.')
                     else:
                         document_1.merge(parts=None, **dict4)
+                        dict4.clear()
                         if path is None:
                             # 将内容写入新word文件中
                             document_1.write(
@@ -394,6 +455,7 @@ def main():
                         else:
                             document_1.write('%s.docx' % path)
                         tkinter.messagebox.showinfo(title="Got it!", message="登记表已生成！")
+                        logging.info('Done.')
                         window.quit()
                         window.destroy()
                         # root.quit()
@@ -402,16 +464,19 @@ def main():
                     if "" in dict4.values():
                         # 弹窗错误提示
                         tkinter.messagebox.showerror('错误', '请为所有未填参数输入参数值！')
-                    document_1.merge(parts=None, **dict4)
-                    if path is None:
-                        # 将内容写入新word文件中
-                        document_1.write(
-                            'D:\\sgmuserprofile\%s\Desktop\%s-%s.docx' % (user, name_template, typename_vehicle))
+                        logging.error('Not all the parameters are set.')
                     else:
-                        document_1.write('%s.docx' % path)
-                    tkinter.messagebox.showinfo(title="Got it!", message="登记表已生成！")
-                    window.quit()
-                    window.destroy()
+                        document_1.merge(parts=None, **dict4)
+                        if path is None:
+                            # 将内容写入新word文件中
+                            document_1.write(
+                                'D:\\sgmuserprofile\%s\Desktop\%s-%s.docx' % (user, name_template, typename_vehicle))
+                        else:
+                            document_1.write('%s.docx' % path)
+                        tkinter.messagebox.showinfo(title="Got it!", message="登记表已生成！")
+                        logging.info('Done.')
+                        window.quit()
+                        window.destroy()
                     # root.quit()
                     # root.destroy()
                 return
@@ -419,7 +484,7 @@ def main():
             # 将label标签的内容设置为字符类型，用var来接收Entry函数的传出内容用以显示在标签上，动态变量
             var_list = locals()
             for i in range(len(para_excluded)):
-                var_list['var_entry%s' % i] = tk.StringVar()
+                var_list['var_entry%d' % i] = tk.StringVar()
 
             # 判别是否为偶数项
             if len(para_excluded) % 2 == 0:
@@ -455,6 +520,7 @@ def main():
                 else:
                     if len(para_excluded) >= 15:
                         tkinter.messagebox.showerror('错误', '缺少参数过多，请在VTAPM中更新参数文件！')
+                        logging.error('The database is lack of too many parameters.')
                         window.quit()
                         window.destroy()
                         root.quit()
