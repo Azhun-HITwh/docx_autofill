@@ -15,7 +15,6 @@ import tkinter.messagebox
 import base64
 import logging
 
-
 # 定义全局变量 获取手动输入值
 global var3, var4
 global dict4
@@ -89,26 +88,25 @@ def main():
                                                            file=[("Microsoft Word Document", ".docx")])
 
         # 选择登记表文件错误
-        if type(path_template) != str:  # 文件类型错误
-            # 弹出错误窗口
-            tkinter.messagebox.showerror('错误', '请选择正确的登记表模板!')
-            logging.error('A wrong format of template is selected.')
+        # if type(path_template) != str:  # 文件类型错误
+        #     # 弹出错误窗口
+        #     tkinter.messagebox.showerror('错误', '请选择正确的登记表模板!')
+        #     logging.error('A wrong format of template is selected.')
+        #
+        # if path_template == "":  # 未选择文件
+        #     # 弹出错误窗口
+        #     tkinter.messagebox.showerror('错误', '请选择正确的登记表模板!')
+        #     logging.error('No template is selected.')
 
-        if path_template == "":  # 未选择文件
-            # 弹出错误窗口
-            tkinter.messagebox.showerror('错误', '请选择正确的登记表模板!')
-            logging.error('No template is selected.')
-
-        else:
-            # 获取登记表名称
-            tmp = path_template.split("/")
-            tmp1 = tmp[-1].split(".")
-            global name_template
-            name_template = tmp1[0]
-            var.set(path_template)
-            # global document_1
-            # document_1 = MailMerge(var.get())  # MailMerge组件
-            return var.get()
+        # 获取登记表名称
+        tmp = path_template.split("/")
+        tmp1 = tmp[-1].split(".")
+        global name_template
+        name_template = tmp1[0]
+        var.set(path_template)
+        # global document_1
+        # document_1 = MailMerge(var.get())  # MailMerge组件
+        return var.get()
 
     # 选择文件button
     b1 = tk.Button(root, text="浏览... Open...", font=("Century Gothic", 10), width=12, height=1,
@@ -132,24 +130,23 @@ def main():
                                                            file=[("Microsoft Excel 97-2003 Worksheet", ".xls"),
                                                                  ("Microsoft Excel Worksheet", ".xlsx")])
         # 选择参数文件错误
-        if type(path_database) != str:  # 文件类型错误
-            # 弹出错误窗口
-            tkinter.messagebox.showerror('错误', '请选择正确的参数文件!')
-            logging.error('A wrong format of database is selected.')
+        # if type(path_database) != str:  # 文件类型错误
+        #     # 弹出错误窗口
+        #     tkinter.messagebox.showerror('错误', '请选择正确的参数文件!')
+        #     logging.error('A wrong format of database is selected.')
+        #
+        # if path_database == "":  # 未选择文件
+        #     # 弹出错误窗口
+        #     tkinter.messagebox.showerror('错误', '请选择正确的参数文件!')
+        #     logging.error('No database is selected.')
 
-        if path_database == "":  # 未选择文件
-            # 弹出错误窗口
-            tkinter.messagebox.showerror('错误', '请选择正确的参数文件!')
-            logging.error('No database is selected.')
-
-        else:
-            var2.set(path_database)
-            # global data
-            # data = xlrd.open_workbook(var2.get())  # 打开参数文件
-            # global table
-            # table = data.sheet_by_name("整车比较信息")  # 获取参数文件的指定worksheet
-            # global num_patac
-            # num_patac = table.col_values(1)  # 参数的泛亚编码
+        var2.set(path_database)
+        # global data
+        # data = xlrd.open_workbook(var2.get())  # 打开参数文件
+        # global table
+        # table = data.sheet_by_name("整车比较信息")  # 获取参数文件的指定worksheet
+        # global num_patac
+        # num_patac = table.col_values(1)  # 参数的泛亚编码
         return var2.get()
 
     # 选择文件button2
@@ -190,12 +187,20 @@ def main():
                                  "P0165ACH", "P0114ACH", "P0296ACH", "P0295ACH", "P0150APT",
                                  "P0011DPT", "P0278ECH", "P0263DCH", "P0114BPT", "P0014AVA",
                                  "P0312ABE", "P0310ABE", "P0311ABE", "P0313ABE", "P0314ABE", "P0039AZH",
-                                 "P0164AIN"]  # 需要忽略逗号分割多值的参数
+                                 "P0164AIN", "P0092AIN", "P0098AIN", "P0100AIN", "P0106AIN", "P0113AIN", "P0115AIN",
+                                 "P0004CIN", "P0006CIN", "P0096AIN", "P0093AIN",
+                                 "P0117BPT"]  # 需要忽略逗号分割多值的参数
         para_special = ["P0028AVP-A", "P0028AVP-B", "P0028AVP-C", "P0028BVP-A", "P0028BVP-B", "P0028BVP-C"]  # 滑行曲线
 
         # 获取整车公告型号-添加至生成登记表的名称中
+        Para("P0017AES")
         temp_name = Para("P0017AES")
-        typename_vehicle = temp_name.get_value().rstrip()
+        if temp_name.get_value().rstrip():
+            typename_vehicle = temp_name.get_value().rstrip()
+        else:
+            tkinter.messagebox.showerror('警告', '缺少参数:整车型号！无法生成登记表！请补充后重新启动工具！')
+            root.destroy()
+            root.quit()
 
         # 遍历所有登记表模板中的field
         for i in para:
@@ -242,7 +247,7 @@ def main():
             if para_multicodes:
                 # 手动选择单配置参数值窗口
                 window1 = tk.Toplevel()
-                window1.title("请手动选择相应配置参数")
+                window1.title("请手动选择相应配置参数（仅单选）")
                 window1.geometry('800x600')
 
                 def myfunction(event):
@@ -301,7 +306,7 @@ def main():
                         logging.error('Not all the parameters are distributed the setting.')
                     else:
                         document_1.merge(parts=None, **dict3)
-                        print(globals())
+                        # print(globals())
                         window1.quit()
                         window1.destroy()
                     return dict3
@@ -310,7 +315,7 @@ def main():
                 def close():
                     window1.quit()
                     window1.destroy()
-                    tkinter.messagebox.showerror('错误', '程序中止!请返回主界面重新启动程序！')
+                    # tkinter.messagebox.showerror('错误', '程序中止!请返回主界面重新启动程序！')
                     logging.error('Cancel is clicked.')
                     return
 
@@ -364,6 +369,16 @@ def main():
             window.title("手动修改未填写参数")
             window.geometry('800x600')
 
+            # window.lift()
+
+            # 关闭函数
+            def close2():
+                window.quit()
+                window.destroy()
+                # tkinter.messagebox.showerror('错误', '程序中止!请返回主界面重新启动程序！')
+                logging.error('Cancel is clicked.')
+                return
+
             def myfunction(event):
                 canvas.configure(scrollregion=canvas.bbox("all"), width=750, height=500)
 
@@ -390,6 +405,7 @@ def main():
             if para_special[0] in para_excluded:
                 Slip_curve_Emission5 = Para("P0028AVP")
                 Slip_curve_Emission6 = Para("P0028BVP")
+                # print(Slip_curve_Emission5.get_value())
                 for i in range(3):
                     dict4[para_special[i]] = Slip_curve_Emission5.get_value().split(";")[i]
                     para_excluded.remove(para_special[i])
@@ -398,8 +414,14 @@ def main():
                     para_excluded.remove(para_special[i + 3])
             if "ratio_weight_axles" in para_excluded:
                 if dict3:
-                    tmp_fr = dict3["P0008AVP"]
-                    tmp_rr = dict3["P0005BVP"]
+                    if 'P0008AVP' in list(dict3.keys()):
+                        tmp_fr = dict3["P0008AVP"]
+                    else:
+                        tmp_fr = Para("P0008AVP").get_value()
+                    if 'P0005BVP' in list(dict3.keys()):
+                        tmp_rr = dict3["P0005BVP"]
+                    else:
+                        tmp_rr = Para("P0005BVP").get_value()
                 else:
                     tmp_fr = Para("P0008AVP").get_value()
                     tmp_rr = Para("P0005BVP").get_value()
@@ -415,7 +437,7 @@ def main():
             def insert2(event):
                 buffer2 = event.widget["textvariable"]
                 # print(buffer2)
-                temp_idx = re.findall('\d+',buffer2)
+                temp_idx = re.findall('\d+', buffer2)
                 # print(temp_idx[0])
                 idx_1 = int(temp_idx[0]) - 2
                 # print(idx_1)
@@ -508,7 +530,7 @@ def main():
             else:
                 if len(para_excluded) == 1:
                     # 手动填写一个参数
-                    tk.Label(window, text="%s:" % para_excluded[0], font=("微软雅黑", 10), height=2).grid(row=0,
+                    tk.Label(frame, text="%s:" % para_excluded[0], font=("微软雅黑", 10), height=2).grid(row=0,
                                                                                                       column=0,
                                                                                                       padx=10,
                                                                                                       pady=10)
@@ -543,12 +565,12 @@ def main():
                         entry1.bind("<FocusOut>", insert2)
                         entry2.bind("<FocusOut>", insert2)
                     tk.Label(frame, text="%s:" % para_excluded[-1], font=("微软雅黑", 10), height=2).grid(
-                        row=len(para_excluded) // 2 + 1, column=0,
+                        row=len(para_excluded) - 1, column=0,
                         padx=10, pady=10)
 
                     entry3 = tk.Entry(frame, textvariable=var_list['var_entry%s' % (len(para_excluded) - 1)],
                                       show=None)
-                    entry3.grid(row=len(para_excluded) // 2 + 1, column=1, padx=10, pady=10)
+                    entry3.grid(row=len(para_excluded) - 1, column=1, padx=10, pady=10)
                     entry3.bind("<FocusOut>", insert2)
 
             # 确定 关闭 按钮frame
@@ -561,7 +583,7 @@ def main():
             btn_insert.grid(row=len(para_excluded) + 1 + 1, column=0, padx=20, pady=10)
 
             # 取消按键
-            btn_cancel = tk.Button(frame1, text="取消", command=lambda: close(), height=1, width=6,
+            btn_cancel = tk.Button(frame1, text="取消", command=lambda: close2(), height=1, width=6,
                                    font=('微软雅黑', 12, 'bold'))
             btn_cancel.grid(row=len(para_excluded) + 1 + 1, column=3)
 
